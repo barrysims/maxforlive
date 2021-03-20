@@ -6,9 +6,9 @@
 //			|
 //	  js launcher.js
 
-var sequence = [0,1,2,3,0,1,2,3,0,1,2,3]
+// The clip sequence
 
-///////////////////////////////////////////////////////////////
+var clips = [5,5,5,5,5];
 
 inlets = 1;
 
@@ -18,12 +18,20 @@ var playing = false;
 // ready for next clip to be fired
 var ready = false;
 
-// which track are we following
-var track = 0;
+// which tracks are we controlling
+var tracks = [0, 1];
+
+// This will be the track whose clips lengths we'll follow
+var primaryTrack = 0;
 
 // currently playing slot
 var slot = 0;
 
+// zero-index the data
+var sequence = clips.map(function(value) {
+	return value - 1;
+});
+	
 // observe the transport
 var transport = new LiveAPI(observeTransport);
 transport.path = "live_set";
@@ -38,10 +46,10 @@ var sigNum = live.get("signature_numerator");
 var sigDen = live.get("signature_denominator");
 log(sigNum + "/" + sigDen);
 		
-// observe the track's slot
-var this_track = new LiveAPI(observeSlot);
-this_track.path = "live_set tracks " + track;
-this_track.property = "playing_slot_index";
+// observe the primary track's slot
+var track = new LiveAPI(observeSlot);
+track.path = "live_set tracks " + primaryTrack;
+track.property = "playing_slot_index";
 
 // for reading the slot's clip
 var this_clip = new LiveAPI("live_set");
@@ -73,14 +81,18 @@ function launchNextClip() {
 	seqPointer++;
 	
 	log("launching: ", next);
-	live.path = "live_set tracks " + track + " clip_slots " + next;
-	live.call("fire");	
+	
+	tracks.forEach(function(t) {
+		//log("live_set tracks " + t + " clip_slots " + next);
+		live.path = "live_set tracks " + t + " clip_slots " + next;
+		live.call("fire");	
+	});
 }
 	
 
 function observeTransport(args) {
 	if (args[0] == "is_playing") {
-		log("is_playing: ", args[1]);
+		//log("is_playing: ", args[1]);
 		if (args[1] == 1) {
 			playing = true;
 			ready = true;
@@ -97,9 +109,8 @@ function observeTransport(args) {
 function observeSlot(args) {
 	if (args[0] == "playing_slot_index" && args[1] >= 0) {
 		var current_slot = args[1];
-		log("playing_slot_index: ", current_slot);
-		
-		this_clip.path = "live_set tracks " + track + " clip_slots " + current_slot + " clip";
+		//log("playing_slot_index: ", current_slot);		
+		this_clip.path = "live_set tracks " + primaryTrack + " clip_slots " + current_slot + " clip";
 		var length = this_clip.get("length");
 		teenthsTillNextClip = length * 4;
 		ready = true
