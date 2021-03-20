@@ -8,7 +8,7 @@
 
 // The clip sequence
 
-var clips = [5,5,5,5,5];
+var clips = [3,5,4,3,5,1];
 
 inlets = 1;
 
@@ -79,7 +79,9 @@ function bang() {
 function launchNextClip() {
 	var next = sequence[seqPointer];
 	seqPointer++;
-	
+	if (seqPointer >= sequence.length) {
+		seqPointer = 0;
+	}	
 	log("launching: ", next);
 	
 	tracks.forEach(function(t) {
